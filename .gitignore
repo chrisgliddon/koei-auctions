@@ -1,0 +1,29 @@
+# Credentials and secrets — never commit these
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.json
+config/secrets.*
+
+# Runtime / local state
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Local logs and temp
+*.log
+/tmp/
+
+# but keep the template
+!.env.example

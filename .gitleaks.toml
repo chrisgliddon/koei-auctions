@@ -1,0 +1,23 @@
+# Gitleaks config — fail on any committed secret.
+# https://github.com/gitleaks/gitleaks
+title = "koei-auctions gitleaks config"
+
+[extend]
+useDefault = true
+
+# Extra guard: Airtable PATs (pat_...) and generic API tokens in our scripts
+[[rules]]
+id = "airtable-pat"
+description = "Airtable personal access token"
+regex = '''pat[A-Za-z0-9]{14}\.[A-Za-z0-9]{64}'''
+tags = ["token", "airtable"]
+
+[[rules]]
+id = "hatch-surrogate"
+description = "Hatch credential surrogate (must never leave the runtime)"
+regex = '''hsurr:[A-Za-z0-9_-]+'''
+tags = ["token", "hatch"]
+
+[allowlist]
+description = "documentation placeholders"
+regexes = ['''pat_\.\.\.''', '''hsurr:\.\.\.''', '''YOUR_.*_HERE''']
