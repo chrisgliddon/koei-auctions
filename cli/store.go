@@ -38,6 +38,7 @@ func openDB(cfg *config) (*sql.DB, error) {
 			ends_at TEXT,
 			photos TEXT,
 			release_id TEXT,
+			evidence TEXT,
 			state TEXT NOT NULL DEFAULT 'staged',
 			airtable_record_id TEXT,
 			note TEXT,
@@ -45,6 +46,8 @@ func openDB(cfg *config) (*sql.DB, error) {
 			updated_at TEXT
 		)`,
 	}
+	// Migration for DBs created before the evidence column existed.
+	db.Exec(`ALTER TABLE staging ADD COLUMN evidence TEXT`)
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
 			db.Close()

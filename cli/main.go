@@ -140,6 +140,7 @@ type candidate struct {
 	EndsAt     string   `json:"ends_at"`
 	ReleaseID  string   `json:"release_id"`
 	SourceName string   `json:"source_name"`
+	KoeiEvidence string `json:"koei_evidence"`
 	GameID     string   `json:"game_id"`
 	PageURL    string   `json:"page_url"`
 }
@@ -152,7 +153,7 @@ commands:
   status                                index + staging counts
   lint   --source KEY (file | --ids a,b)  check candidates against the index (exit 1 on hits)
   ingest --source KEY <candidates.json> stage candidates into SQLite (dedupe on ingest)
-  push   [--dry-run] [--allow-unlinked] [--limit N]
+  push   [--dry-run] [--allow-unlinked] [--allow-unconfirmed] [--limit N]
                                         push staged records to Airtable, verify by read-back
 
 source KEY is the UUID source key: yahoo | mercari | surugaya

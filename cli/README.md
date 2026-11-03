@@ -15,6 +15,13 @@ gate that keeps duplicates and unverified listings out of the base.
    file or ID list: `DUPLICATE` (UUID match), `CROSS-SOURCE` (same ID under
    another storefront), `UUID-MISMATCH` (same ID+source, different UUID —
    a base inconsistency). Exit 1 on any hit.
+   **Koei Tecmo confirmation gate (standing rule, 2026-11-02):** a candidate
+   is only staged for pushing when it carries a `koei_evidence` string —
+   what in the listing's own photos or publisher info confirms it is a
+   Koei Tecmo product (branding, KOE- catalog code, imprint). Push **holds**
+   any staged row without one (`--allow-unconfirmed` overrides, for
+   adjudicated cases only). The confirmation text is written into the
+   created record's Notes.
 3. **push** — staged rows are created in Airtable one at a time. Before
    creating, each UUID is live-checked in Airtable (a hit marks the row
    synced without creating anything). After creating, the record is read
@@ -53,7 +60,7 @@ koei-auctions status
 koei-auctions lint   --source yahoo candidates.json
 koei-auctions lint   --source mercari --ids m12345678901,m23456789012
 koei-auctions ingest --source yahoo candidates.json
-koei-auctions push [--dry-run] [--allow-unlinked] [--limit N]
+koei-auctions push [--dry-run] [--allow-unlinked] [--allow-unconfirmed] [--limit N]
 ```
 
 Source keys are the UUID source keys: `yahoo` (Jauce/Buyee/PayPay Flea),
@@ -62,4 +69,5 @@ Source keys are the UUID source keys: `yahoo` (Jauce/Buyee/PayPay Flea),
 Candidates are the sweep's JSON shape (`id`, `title`, `price`, `photos`,
 `seller`, `bids`, `ends_at`, `page_url`), plus an optional adjudicated
 `release_id` (Airtable Release record ID) that push writes as the
-Game Release link.
+Game Release link, and the `koei_evidence` confirmation string described
+above.

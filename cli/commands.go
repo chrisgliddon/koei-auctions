@@ -225,7 +225,7 @@ func cmdIngest(cfg *config, args []string) error {
 		return err
 	}
 	defer db.Close()
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := time.Now().Format(time.RFC3339)
 	accepted, rejected := 0, 0
 	seen := map[string]bool{}
 	for _, c := range cands {
@@ -261,10 +261,10 @@ func cmdIngest(cfg *config, args []string) error {
 		}
 		_, err := db.Exec(`INSERT INTO staging
 			(listing_uuid, source_key, source_name, external_id, title, price, seller, bids,
-			 ends_at, photos, release_id, state, created_at, updated_at)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,'staged',?,?)`,
+			 ends_at, photos, release_id, evidence, state, created_at, updated_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'staged',?,?)`,
 			u, src, display, c.ID, nullable(c.Title), c.Price, nullable(c.Seller), bids,
-			nullable(c.EndsAt), string(photos), nullable(c.ReleaseID), now, now)
+			nullable(c.EndsAt), string(photos), nullable(c.ReleaseID), nullable(c.KoeiEvidence), now, now)
 		if err != nil {
 			fmt.Printf("REJECT %s: insert failed: %v\n", c.ID, err)
 			rejected++
@@ -289,11 +289,12 @@ type stagedRow struct {
 	EndsAt     sql.NullString
 	Photos     string
 	ReleaseID  sql.NullString
+	Evidence   sql.NullString
 	CreatedAt  string
 }
 
 func cmdPush(cfg *config, args []string) error {
-	dryRun, allowUnlinked := false, false
+	dryRun, allowUnlinked, allowUnconfirmed := false, false, false
 	limit := 0
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -301,6 +302,8 @@ func cmdPush(cfg *config, args []string) error {
 			dryRun = true
 		case "--allow-unlinked":
 			allowUnlinked = true
+		case "--allow-unconfirmed":
+			allowUnconfirmed = true
 		case "--limit":
 			if i+1 < len(args) {
 				fmt.Sscan(args[i+1], &limit)
@@ -317,7 +320,7 @@ func cmdPush(cfg *config, args []string) error {
 	defer db.Close()
 	rows, err := db.Query(`SELECT listing_uuid, source_key, source_name, external_id,
 		COALESCE(title,''), COALESCE(price,0), seller, bids, ends_at, COALESCE(photos,'[]'),
-		release_id, created_at FROM staging WHERE state='staged' ORDER BY created_at`)
+		release_id, evidence, created_at FROM staging WHERE state='staged' ORDER BY created_at`)
 	if err != nil {
 		return err
 	}
@@ -325,7 +328,7 @@ func cmdPush(cfg *config, args []string) error {
 	for rows.Next() {
 		var r stagedRow
 		if err := rows.Scan(&r.UUID, &r.SourceKey, &r.SourceName, &r.ExternalID, &r.Title,
-			&r.Price, &r.Seller, &r.Bids, &r.EndsAt, &r.Photos, &r.ReleaseID, &r.CreatedAt); err != nil {
+			&r.Price, &r.Seller, &r.Bids, &r.EndsAt, &r.Photos, &r.ReleaseID, &r.Evidence, &r.CreatedAt); err != nil {
 			return err
 		}
 		staged = append(staged, r)
@@ -343,6 +346,11 @@ func cmdPush(cfg *config, args []string) error {
 	for _, r := range staged {
 		if limit > 0 && pushed+already >= limit {
 			break
+		}
+		if (!r.Evidence.Valid || r.Evidence.String == "") && !allowUnconfirmed {
+			fmt.Printf("HELD   %s: no koei_evidence staged - Koei Tecmo confirmation gate (push with --allow-unconfirmed to override)\n", r.ExternalID)
+			held++
+			continue
 		}
 		if !r.ReleaseID.Valid && !allowUnlinked {
 			fmt.Printf("HELD   %s: no release_id staged (push with --allow-unlinked to override)\n", r.ExternalID)
@@ -379,6 +387,9 @@ func cmdPush(cfg *config, args []string) error {
 		}
 		notes := fmt.Sprintf("Found via %s on %s. Active/buyable at time of check. Evidence: detail page read ingested into SQLite on %s; pushed by koei-auctions CLI on %s.",
 			via, today, r.CreatedAt[:10], today)
+		if r.Evidence.Valid && r.Evidence.String != "" {
+			notes += " Koei confirmation: " + r.Evidence.String
+		}
 		fields := map[string]any{
 			"Auction ID":   r.ExternalID,
 			"Listing UUID": r.UUID,
@@ -465,5 +476,5 @@ func cmdPush(cfg *config, args []string) error {
 
 func markSynced(db *sql.DB, uuid, recID, note string) {
 	db.Exec(`UPDATE staging SET state='synced', airtable_record_id=?, note=?, updated_at=? WHERE listing_uuid=?`,
-		recID, nullable(note), time.Now().UTC().Format(time.RFC3339), uuid)
+		recID, nullable(note), time.Now().Format(time.RFC3339), uuid)
 }
