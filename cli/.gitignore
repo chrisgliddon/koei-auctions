@@ -1,3 +1,4 @@
 koei-auctions
+cli
 *.sqlite
 *.sqlite.tmp
