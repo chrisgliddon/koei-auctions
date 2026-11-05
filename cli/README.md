@@ -52,6 +52,31 @@ CLI, the binary asks the runtime's authd (unix socket
 `custom.airtable` surrogate and sends it as a Bearer token; the egress
 proxy exchanges the surrogate for the real credential.
 
+## Harvest (Yahoo Auctions via DataImpulse)
+
+`harvest` is the discovery/fetch layer, modeled on the video-fetch CLI:
+
+- All fetching goes through the DataImpulse proxy (`BUNKO_PROXY_URL` from
+  `~/.config/bunko/proxy.env`) — **never direct, never ZenMarket**. Yahoo
+  record URLs are `https://auctions.yahoo.co.jp/jp/auction/<id>`.
+- The gateway rotates the residential exit IP per connection (keep-alives
+  off). Roughly half of exit IPs are EEA/UK-geolocated and Yahoo geo-blocks
+  those with a 403 page, so fetches retry on fresh connections (bounded).
+- For each watchlist title: proxied search (IDs only — grid data is never
+  evidence), then each unknown ID's item page is fetched, **saved to the
+  local corpus** (`~/workspace/koei-auctions/html/yahoo/<id>.html`), and
+  parsed from its `__NEXT_DATA__` payload. The parsed `auctionId` must
+  equal the requested ID or the page is discarded (identity check), and
+  the item's own category breadcrumb must be a game/computer category or
+  the candidate is dropped (category-only rule).
+- Candidates land in the candidates JSON and, with `--ingest`, in the
+  staging table. Harvest never sets `koei_evidence` — an agent confirms
+  Koei Tecmo branding from the saved photos and records it with
+  `confirm`, after which `push` releases the row.
+- Progress is resumable: `harvest_state.json` (per-title last run + seen
+  IDs) is saved atomically after every title, and known IDs (index +
+  staging) are skipped before fetching.
+
 ## Usage
 
 ```

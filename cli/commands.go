@@ -225,6 +225,15 @@ func cmdIngest(cfg *config, args []string) error {
 		return err
 	}
 	defer db.Close()
+	accepted, rejected := stageCandidates(cfg, db, src, cands)
+	fmt.Printf("ingest: %d staged, %d rejected of %d candidates\n", accepted, rejected, len(cands))
+	return nil
+}
+
+// stageCandidates is the shared ingest core (used by ingest and harvest):
+// compute each candidate's Listing UUID, reject anything already in the
+// index or staging, insert the rest as 'staged'.
+func stageCandidates(cfg *config, db *sql.DB, src string, cands []candidate) (int, int) {
 	now := time.Now().Format(time.RFC3339)
 	accepted, rejected := 0, 0
 	seen := map[string]bool{}
@@ -273,8 +282,7 @@ func cmdIngest(cfg *config, args []string) error {
 		fmt.Printf("STAGED %s: %s %q ¥%d\n", c.ID, u, trunc(c.Title, 50), c.Price)
 		accepted++
 	}
-	fmt.Printf("ingest: %d staged, %d rejected of %d candidates\n", accepted, rejected, len(cands))
-	return nil
+	return accepted, rejected
 }
 
 type stagedRow struct {
@@ -477,4 +485,50 @@ func cmdPush(cfg *config, args []string) error {
 func markSynced(db *sql.DB, uuid, recID, note string) {
 	db.Exec(`UPDATE staging SET state='synced', airtable_record_id=?, note=?, updated_at=? WHERE listing_uuid=?`,
 		recID, nullable(note), time.Now().Format(time.RFC3339), uuid)
+}
+
+// cmdConfirm records the agent's Koei Tecmo confirmation (and optionally the
+// adjudicated Release link) on a staged row, so push will release it.
+func cmdConfirm(cfg *config, args []string) error {
+	id, evidence, release := "", "", ""
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--id":
+			if i+1 < len(args) {
+				id = args[i+1]
+				i++
+			}
+		case "--evidence":
+			if i+1 < len(args) {
+				evidence = args[i+1]
+				i++
+			}
+		case "--release":
+			if i+1 < len(args) {
+				release = args[i+1]
+				i++
+			}
+		default:
+			return fmt.Errorf("unknown confirm flag %s", args[i])
+		}
+	}
+	if id == "" || evidence == "" {
+		return fmt.Errorf("confirm needs --id and --evidence")
+	}
+	db, err := openDB(cfg)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	res, err := db.Exec(`UPDATE staging SET evidence=?, release_id=COALESCE(?, release_id), updated_at=?
+		WHERE external_id=? AND state='staged'`, evidence, nullable(release), time.Now().Format(time.RFC3339), id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("no staged row for %s", id)
+	}
+	fmt.Printf("CONFIRMED %s: evidence recorded%s\n", id, map[bool]string{true: ", release set", false: ""}[release != ""])
+	return nil
 }
