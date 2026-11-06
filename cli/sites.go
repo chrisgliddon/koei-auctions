@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"encoding/hex"
+	"strings"
+)
 
 // Proxy / storefront sites that address a Yahoo Auctions listing by its
 // auction ID alone. The auction ID is the universal key: every registered
@@ -18,6 +21,10 @@ import "strings"
 //     /item/jdirectitems/auction/<id> form registered here (live-checked).
 //   - fromjapan: live-checked HTTP 200; multiple real links in the wild.
 //   - neokyo:    real indexed item pages show the Auction ID at this path.
+//   - dejapan:   real item URLs carry a title slug before the ID, but the
+//     slug is decorative — verified live 2026-11-05: /item/x/<id> served
+//     the exact item with no redirect, so a fixed "x" slug works.
+//   - rinkya:    real indexed item pages use /en/auction-<id>.
 type site struct {
 	Key      string
 	Name     string
@@ -31,6 +38,12 @@ var sites = []site{
 	{"buyee", "Buyee", "https://buyee.jp/item/jdirectitems/auction/{id}"},
 	{"fromjapan", "FromJapan", "https://www.fromjapan.co.jp/japan/en/auction/yahoo/input/{id}/"},
 	{"neokyo", "Neokyo", "https://neokyo.com/en/product/yahoo/{id}"},
+	{"dejapan", "DeJAPAN", "https://www.dejapan.com/en/auction/yahoo/item/x/{id}"},
+	{"rinkya", "Rinkya", "https://www.rinkya.com/en/auction-{id}"},
+	// Doorzo's detail path embeds the hex encoding of the full Yahoo item
+	// URL — buildable in code, but NOT expressible as an Airtable formula,
+	// so Doorzo is CLI-only (no matching formula field).
+	{"doorzo", "Doorzo", "https://www.doorzo.com/en/mall/yahoo/detail/{hex}"},
 }
 
 // siteByKey finds a registered site.
@@ -53,6 +66,10 @@ func siteURL(key, auctionID string) string {
 	s, ok := siteByKey(key)
 	if !ok {
 		return ""
+	}
+	if strings.Contains(s.Template, "{hex}") {
+		raw := "https://auctions.yahoo.co.jp/jp/auction/" + auctionID
+		return strings.Replace(s.Template, "{hex}", hex.EncodeToString([]byte(raw)), 1)
 	}
 	return strings.Replace(s.Template, "{id}", auctionID, 1)
 }

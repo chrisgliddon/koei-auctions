@@ -91,9 +91,12 @@ ID alone. The CLI registers each verified pattern (`sites` lists them;
 | buyee | `https://buyee.jp/item/jdirectitems/auction/{id}` |
 | fromjapan | `https://www.fromjapan.co.jp/japan/en/auction/yahoo/input/{id}/` |
 | neokyo | `https://neokyo.com/en/product/yahoo/{id}` |
+| dejapan | `https://www.dejapan.com/en/auction/yahoo/item/x/{id}` (slug is decorative) |
+| rinkya | `https://www.rinkya.com/en/auction-{id}` |
+| doorzo | hex-encoded Yahoo URL in the path — CLI only, no Airtable formula |
 
 The same patterns exist as formula fields in the Airtable Auctions table
-(Jauce URL, ZenMarket URL, Buyee URL, FromJapan URL, Neokyo URL), and the
+(Jauce URL, ZenMarket URL, Buyee URL, FromJapan URL, Neokyo URL, DeJAPAN URL, Rinkya URL), and the
 Canonical URL formula's Yahoo branch is the direct Yahoo URL — so a record
 needs only Source + Auction ID for all of its links to exist. ZenMarket is
 registered for URL generation only; fetching through it stays banned.
