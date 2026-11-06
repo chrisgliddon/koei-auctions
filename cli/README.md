@@ -60,8 +60,14 @@ proxy exchanges the surrogate for the real credential.
   `~/.config/bunko/proxy.env`) — **never direct, never ZenMarket**. Yahoo
   record URLs are `https://auctions.yahoo.co.jp/jp/auction/<id>`.
 - The gateway rotates the residential exit IP per connection (keep-alives
-  off). Roughly half of exit IPs are EEA/UK-geolocated and Yahoo geo-blocks
-  those with a 403 page, so fetches retry on fresh connections (bounded).
+  off). A share of exit IPs are EEA/UK-geolocated; Yahoo answers those with
+  its EEA/UK notice page (HTTP 403), so fetches retry on fresh connections
+  (bounded). The fetcher classifies every response from its actual body —
+  a 403 counts as a geo-block ONLY when the body is the EEA/UK notice page,
+  any other 403 is counted/reported separately with the page's title, and a
+  404 carrying a real Yahoo page (Yahoo serves zero-result search pages
+  this way) is parsed, not failed. The harvest summary prints the verified
+  counters; no block mechanism is ever inferred from a status code alone.
 - For each watchlist title: proxied search (IDs only — grid data is never
   evidence), then each unknown ID's item page is fetched, **saved to the
   local corpus** (`~/workspace/koei-auctions/html/yahoo/<id>.html`), and

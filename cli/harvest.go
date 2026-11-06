@@ -238,7 +238,7 @@ func cmdHarvest(cfg *config, args []string) error {
 	blockedStreak := 0
 	for _, e := range entries {
 		searchURL := "https://auctions.yahoo.co.jp/search/search?p=" + url.QueryEscape(e.Jp) + "&n=100"
-		body, err := fetcher.fetch(searchURL)
+		body, status, err := fetcher.fetch(searchURL)
 		if err != nil {
 			fmt.Printf("[%s] search failed: %v\n", e.Jp, err)
 			blockedStreak++
@@ -247,6 +247,9 @@ func cmdHarvest(cfg *config, args []string) error {
 				break
 			}
 			continue
+		}
+		if status != 200 {
+			fmt.Printf("[%s] search page returned HTTP %d with a parseable Yahoo page body - parsing it (its payload states its own result count)\n", e.Jp, status)
 		}
 		blockedStreak = 0
 		var ids []string
@@ -268,10 +271,13 @@ func cmdHarvest(cfg *config, args []string) error {
 			}
 			known[id] = true
 			fetchedCount++
-			page, err := fetcher.fetch("https://auctions.yahoo.co.jp/jp/auction/" + id)
+			page, status, err := fetcher.fetch("https://auctions.yahoo.co.jp/jp/auction/" + id)
 			if err != nil {
 				fmt.Printf("  %s: item fetch failed: %v\n", id, err)
 				continue
+			}
+			if status != 200 {
+				fmt.Printf("  %s: item page returned HTTP %d with a parseable Yahoo page body - parsing it\n", id, status)
 			}
 			os.WriteFile(filepath.Join(corpusDir, id+".html"), page, 0o644)
 			it, err := parseYahooItem(page)
@@ -319,8 +325,8 @@ func cmdHarvest(cfg *config, args []string) error {
 	if err := os.WriteFile(outPath, rawOut, 0o644); err != nil {
 		return err
 	}
-	fmt.Printf("harvest: %d candidates -> %s (requests %d, geo-blocked %d, pages fetched %d)\n",
-		len(all), outPath, fetcher.attempts, fetcher.blocked, fetcher.fetched)
+	fmt.Printf("harvest: %d candidates -> %s (requests %d, geo-blocked(verified EEA/UK page) %d, http-403-other %d, http-404-pages %d, pages fetched %d)\n",
+		len(all), outPath, fetcher.attempts, fetcher.geoBlocked, fetcher.http403, fetcher.softPages, fetcher.fetched)
 	if doIngest && len(all) > 0 {
 		acc, rej := stageCandidates(cfg, db, "yahoo", all)
 		fmt.Printf("ingest: %d staged, %d rejected\n", acc, rej)
