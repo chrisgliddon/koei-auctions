@@ -532,3 +532,26 @@ func cmdConfirm(cfg *config, args []string) error {
 	fmt.Printf("CONFIRMED %s: evidence recorded%s\n", id, map[bool]string{true: ", release set", false: ""}[release != ""])
 	return nil
 }
+
+// cmdSites lists the registered proxy sites, or — given an auction ID —
+// prints every site's item URL for that ID.
+func cmdSites(cfg *config, args []string) error {
+	id := ""
+	for _, a := range args {
+		if strings.HasPrefix(a, "-") {
+			return fmt.Errorf("unknown sites flag %s", a)
+		}
+		id = a
+	}
+	for _, s := range sites {
+		if id == "" {
+			fmt.Printf("%-10s %-14s %s\n", s.Key, s.Name, s.Template)
+		} else if u := siteURL(s.Key, id); u != "" {
+			fmt.Printf("%-10s %s\n", s.Key, u)
+		}
+	}
+	if id != "" && strings.HasPrefix(id, "z") {
+		fmt.Println("note: z-prefixed IDs are PayPay Flea Market items, not Yahoo auctions — no proxy pattern applies; the flea URL is https://paypayfleamarket.yahoo.co.jp/item/" + id)
+	}
+	return nil
+}

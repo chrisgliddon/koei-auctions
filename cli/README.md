@@ -77,6 +77,29 @@ proxy exchanges the surrogate for the real credential.
   IDs) is saved atomically after every title, and known IDs (index +
   staging) are skipped before fetching.
 
+## Proxy sites (the auction ID is the key)
+
+Every Yahoo Auctions proxy/storefront addresses a listing by its auction
+ID alone. The CLI registers each verified pattern (`sites` lists them;
+`sites <auction-id>` prints every URL for an ID):
+
+| key | pattern |
+|---|---|
+| yahoo | `https://auctions.yahoo.co.jp/jp/auction/{id}` |
+| jauce | `https://www.jauce.com/auction/{id}` |
+| zenmarket | `https://zenmarket.jp/auction.aspx?itemCode={id}` |
+| buyee | `https://buyee.jp/item/jdirectitems/auction/{id}` |
+| fromjapan | `https://www.fromjapan.co.jp/japan/en/auction/yahoo/input/{id}/` |
+| neokyo | `https://neokyo.com/en/product/yahoo/{id}` |
+
+The same patterns exist as formula fields in the Airtable Auctions table
+(Jauce URL, ZenMarket URL, Buyee URL, FromJapan URL, Neokyo URL), and the
+Canonical URL formula's Yahoo branch is the direct Yahoo URL — so a record
+needs only Source + Auction ID for all of its links to exist. ZenMarket is
+registered for URL generation only; fetching through it stays banned.
+z-prefixed IDs are PayPay Flea Market items, not Yahoo auctions, and get
+no proxy URLs.
+
 ## Usage
 
 ```

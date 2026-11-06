@@ -119,7 +119,7 @@ func sourceDisplay(sourceKey, externalID string) string {
 func canonicalURL(sourceKey, externalID string) string {
 	switch sourceDisplay(sourceKey, externalID) {
 	case "Yahoo":
-		return "https://auctions.yahoo.co.jp/jp/auction/" + externalID
+		return siteURL("yahoo", externalID)
 	case "PayPay Flea":
 		return "https://paypayfleamarket.yahoo.co.jp/item/" + externalID
 	case "Mercari":
@@ -155,6 +155,7 @@ commands:
   ingest --source KEY <candidates.json> stage candidates into SQLite (dedupe on ingest)
   push   [--dry-run] [--allow-unlinked] [--allow-unconfirmed] [--limit N]
                                         push staged records to Airtable, verify by read-back
+  sites [<auction-id>]                list registered proxy sites, or print every site's URL for an ID
   confirm --id X --evidence "..." [--release recId]
                                         record the agent's Koei confirmation on a staged row
   harvest [--titles a,b] [--per-title N] [--ingest] [--out file]
@@ -192,6 +193,8 @@ func main() {
 		runErr = cmdHarvest(cfg, os.Args[2:])
 	case "confirm":
 		runErr = cmdConfirm(cfg, os.Args[2:])
+	case "sites":
+		runErr = cmdSites(cfg, os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
