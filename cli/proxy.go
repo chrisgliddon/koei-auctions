@@ -139,6 +139,14 @@ var errGeoBlocked = fmt.Errorf("geo-blocked on every exit IP tried (each 403 ver
 //     (which states its own result count) instead of failing the search.
 //   - anything else: an error naming the status.
 func (f *proxiedFetcher) fetch(rawURL string) ([]byte, int, error) {
+	return f.fetchUA(rawURL, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+}
+
+// fetchUA is fetch with a caller-chosen User-Agent. Mercari item pages
+// are fetched with a crawler UA because Mercari serves bots the full
+// server-rendered page (JSON-LD breadcrumb + product data) while
+// browser UAs get a client-rendered shell without them.
+func (f *proxiedFetcher) fetchUA(rawURL, ua string) ([]byte, int, error) {
 	var lastErr error
 	for attempt := 0; attempt < 7; attempt++ {
 		f.pace()
@@ -147,7 +155,7 @@ func (f *proxiedFetcher) fetch(rawURL string) ([]byte, int, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+		req.Header.Set("User-Agent", ua)
 		req.Header.Set("Accept-Language", "ja,en-US;q=0.8,en;q=0.6")
 		f.lastReq = time.Now()
 		resp, err := f.client.Do(req)

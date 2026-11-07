@@ -131,18 +131,19 @@ func canonicalURL(sourceKey, externalID string) string {
 }
 
 type candidate struct {
-	ID         string   `json:"id"`
-	Title      string   `json:"title"`
-	Price      int      `json:"price"`
-	Photos     []string `json:"photos"`
-	Seller     string   `json:"seller"`
-	Bids       *int     `json:"bids"`
-	EndsAt     string   `json:"ends_at"`
-	ReleaseID  string   `json:"release_id"`
-	SourceName string   `json:"source_name"`
-	KoeiEvidence string `json:"koei_evidence"`
-	GameID     string   `json:"game_id"`
-	PageURL    string   `json:"page_url"`
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	Price        int      `json:"price"`
+	Photos       []string `json:"photos"`
+	Seller       string   `json:"seller"`
+	Bids         *int     `json:"bids"`
+	EndsAt       string   `json:"ends_at"`
+	ReleaseID    string   `json:"release_id"`
+	SourceName   string   `json:"source_name"`
+	CategoryID   string   `json:"category_id"`
+	KoeiEvidence string   `json:"koei_evidence"`
+	GameID       string   `json:"game_id"`
+	PageURL      string   `json:"page_url"`
 }
 
 func usage() {
@@ -162,6 +163,11 @@ commands:
                                         fetch Yahoo Auctions via the DataImpulse proxy
                                         (search + item pages), save pages to the local
                                         corpus, parse and stage candidates
+  harvest-mercari [--titles a,b] [--per-title N] [--ingest] [--out file]
+                                        fetch Mercari via the DataImpulse proxy
+                                        (search API with DPoP proofs + item pages),
+                                        save pages to the local corpus, parse and
+                                        stage candidates
 
 source KEY is the UUID source key: yahoo | mercari | surugaya
 env: KOEI_AUCTIONS_DB, KOEI_UUID_NS_FILE, JARVIS_AUTHD_SOCK`)
@@ -191,6 +197,8 @@ func main() {
 		runErr = cmdPush(cfg, os.Args[2:])
 	case "harvest":
 		runErr = cmdHarvest(cfg, os.Args[2:])
+	case "harvest-mercari":
+		runErr = cmdHarvestMercari(cfg, os.Args[2:])
 	case "confirm":
 		runErr = cmdConfirm(cfg, os.Args[2:])
 	case "sites":
