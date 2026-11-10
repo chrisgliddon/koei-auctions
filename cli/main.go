@@ -155,7 +155,14 @@ commands:
   lint   --source KEY (file | --ids a,b)  check candidates against the index (exit 1 on hits)
   ingest --source KEY <candidates.json> stage candidates into SQLite (dedupe on ingest)
   push   [--dry-run] [--allow-unlinked] [--allow-unconfirmed] [--limit N]
-                                        push staged records to Airtable, verify by read-back
+                                        push staged records to Airtable, verify by read-back;
+                                        also writes the artifact photo payload for the run
+  upload-images [--targets airtable|artifact|both] [--limit N] [--force] [--dry-run]
+                                        combined image uploader for pushed records:
+                                        airtable = ensure Images attachments are present;
+                                        artifact = write photoSources payload batches for the
+                                        gallery board's cacheAuctionImages action
+  upload-images --mark-invoked <batch>  record that a payload batch was delivered to the board
   sites [<auction-id>]                list registered proxy sites, or print every site's URL for an ID
   confirm --id X --evidence "..." [--release recId]
                                         record the agent's Koei confirmation on a staged row
@@ -195,6 +202,8 @@ func main() {
 		runErr = cmdIngest(cfg, os.Args[2:])
 	case "push":
 		runErr = cmdPush(cfg, os.Args[2:])
+	case "upload-images":
+		runErr = cmdUploadImages(cfg, os.Args[2:])
 	case "harvest":
 		runErr = cmdHarvest(cfg, os.Args[2:])
 	case "harvest-mercari":

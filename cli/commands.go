@@ -351,6 +351,7 @@ func cmdPush(cfg *config, args []string) error {
 	}
 	today := time.Now().Format("2006-01-02")
 	pushed, held, already, failed := 0, 0, 0, 0
+	var pushSources []photoSource
 	for _, r := range staged {
 		if limit > 0 && pushed+already >= limit {
 			break
@@ -376,6 +377,14 @@ func cmdPush(cfg *config, args []string) error {
 			if !dryRun {
 				markSynced(db, r.UUID, existing.ID, "already in Airtable at push time (live UUID check)")
 				upsertIndexRow(db, existing)
+				var exPhotos []string
+				json.Unmarshal([]byte(r.Photos), &exPhotos)
+				if len(exPhotos) > artifactPhotosEach {
+					exPhotos = exPhotos[:artifactPhotosEach]
+				}
+				if len(exPhotos) > 0 {
+					pushSources = append(pushSources, photoSource{AuctionID: existing.ID, URLs: exPhotos})
+				}
 			}
 			already++
 			continue
@@ -472,10 +481,16 @@ func cmdPush(cfg *config, args []string) error {
 		upsertIndexRow(db, back)
 		fmt.Printf("PUSHED %s: created %s and verified (UUID, FX%s)\n", r.ExternalID, recID,
 			map[bool]string{true: ", Release", false: ""}[r.ReleaseID.Valid])
+		if len(photos) > 0 {
+			pushSources = append(pushSources, photoSource{AuctionID: recID, URLs: photos})
+		}
 		pushed++
 	}
 	fmt.Printf("push: %d pushed, %d already in Airtable, %d held, %d failed (of %d staged)\n",
 		pushed, already, held, failed, len(staged))
+	if !dryRun {
+		appendPushPhotoSources(cfg, db, pushSources)
+	}
 	if failed > 0 {
 		return &exitError{code: 1}
 	}
