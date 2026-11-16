@@ -54,10 +54,10 @@ proxy exchanges the surrogate for the real credential.
 
 ## Harvesting
 
-Proxied harvesting of marketplace listings has moved to a separate private
-tool. This CLI no longer fetches listing pages. Candidate JSON from that
-tool, or from a manual sweep, is still staged here with `ingest`, then
-linted and pushed.
+Proxied fetching of marketplace pages has moved to a separate private
+tool. This CLI no longer fetches pages. Candidate JSON from that tool, or
+from a manual sweep, is still staged here with `ingest`, then linted and
+pushed.
 
 ## Proxy sites (the auction ID is the key)
 
