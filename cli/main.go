@@ -166,15 +166,6 @@ commands:
   sites [<auction-id>]                list registered proxy sites, or print every site's URL for an ID
   confirm --id X --evidence "..." [--release recId]
                                         record the agent's Koei confirmation on a staged row
-  harvest [--titles a,b] [--per-title N] [--ingest] [--out file]
-                                        fetch Yahoo Auctions via the DataImpulse proxy
-                                        (search + item pages), save pages to the local
-                                        corpus, parse and stage candidates
-  harvest-mercari [--titles a,b] [--per-title N] [--ingest] [--out file]
-                                        fetch Mercari via the DataImpulse proxy
-                                        (search API with DPoP proofs + item pages),
-                                        save pages to the local corpus, parse and
-                                        stage candidates
 
 source KEY is the UUID source key: yahoo | mercari | surugaya
 env: KOEI_AUCTIONS_DB, KOEI_UUID_NS_FILE, JARVIS_AUTHD_SOCK`)
@@ -204,10 +195,6 @@ func main() {
 		runErr = cmdPush(cfg, os.Args[2:])
 	case "upload-images":
 		runErr = cmdUploadImages(cfg, os.Args[2:])
-	case "harvest":
-		runErr = cmdHarvest(cfg, os.Args[2:])
-	case "harvest-mercari":
-		runErr = cmdHarvestMercari(cfg, os.Args[2:])
 	case "confirm":
 		runErr = cmdConfirm(cfg, os.Args[2:])
 	case "sites":

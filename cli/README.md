@@ -52,36 +52,12 @@ CLI, the binary asks the runtime's authd (unix socket
 `custom.airtable` surrogate and sends it as a Bearer token; the egress
 proxy exchanges the surrogate for the real credential.
 
-## Harvest (Yahoo Auctions via DataImpulse)
+## Harvesting
 
-`harvest` is the discovery/fetch layer, modeled on the video-fetch CLI:
-
-- All fetching goes through the DataImpulse proxy (`BUNKO_PROXY_URL` from
-  `~/.config/bunko/proxy.env`) — **never direct, never ZenMarket**. Yahoo
-  record URLs are `https://auctions.yahoo.co.jp/jp/auction/<id>`.
-- The gateway rotates the residential exit IP per connection (keep-alives
-  off). A share of exit IPs are EEA/UK-geolocated; Yahoo answers those with
-  its EEA/UK notice page (HTTP 403), so fetches retry on fresh connections
-  (bounded). The fetcher classifies every response from its actual body —
-  a 403 counts as a geo-block ONLY when the body is the EEA/UK notice page,
-  any other 403 is counted/reported separately with the page's title, and a
-  404 carrying a real Yahoo page (Yahoo serves zero-result search pages
-  this way) is parsed, not failed. The harvest summary prints the verified
-  counters; no block mechanism is ever inferred from a status code alone.
-- For each watchlist title: proxied search (IDs only — grid data is never
-  evidence), then each unknown ID's item page is fetched, **saved to the
-  local corpus** (`~/workspace/koei-auctions/html/yahoo/<id>.html`), and
-  parsed from its `__NEXT_DATA__` payload. The parsed `auctionId` must
-  equal the requested ID or the page is discarded (identity check), and
-  the item's own category breadcrumb must be a game/computer category or
-  the candidate is dropped (category-only rule).
-- Candidates land in the candidates JSON and, with `--ingest`, in the
-  staging table. Harvest never sets `koei_evidence` — an agent confirms
-  Koei Tecmo branding from the saved photos and records it with
-  `confirm`, after which `push` releases the row.
-- Progress is resumable: `harvest_state.json` (per-title last run + seen
-  IDs) is saved atomically after every title, and known IDs (index +
-  staging) are skipped before fetching.
+Proxied harvesting of marketplace listings has moved to a separate private
+tool. This CLI no longer fetches listing pages. Candidate JSON from that
+tool, or from a manual sweep, is still staged here with `ingest`, then
+linted and pushed.
 
 ## Proxy sites (the auction ID is the key)
 
