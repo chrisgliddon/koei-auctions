@@ -12,7 +12,7 @@ import (
 // so a record only needs Source + Auction ID for every link to exist.
 //
 // Patterns verified 2026-11-05:
-//   - yahoo:     the canonical listing URL (also the CLI's fetch host).
+//   - yahoo:     the canonical listing URL.
 //   - jauce:     long-standing pattern, used by this project since 2025-09.
 //   - zenmarket: long-standing pattern (itemCode == auction ID exactly).
 //     Registered for URL generation only — fetching through ZenMarket is

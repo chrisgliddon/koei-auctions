@@ -230,7 +230,7 @@ func cmdIngest(cfg *config, args []string) error {
 	return nil
 }
 
-// stageCandidates is the shared ingest core (used by ingest and harvest):
+// stageCandidates is the ingest core:
 // compute each candidate's Listing UUID, reject anything already in the
 // index or staging, insert the rest as 'staged'.
 func stageCandidates(cfg *config, db *sql.DB, src string, cands []candidate) (int, int) {
