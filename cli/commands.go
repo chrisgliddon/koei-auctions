@@ -304,6 +304,7 @@ type stagedRow struct {
 func cmdPush(cfg *config, args []string) error {
 	dryRun, allowUnlinked, allowUnconfirmed := false, false, false
 	limit := 0
+	batchSize := 40 // Chris's <50 batch rule (2026-11-18): creates land in verified batches
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--dry-run":
@@ -317,9 +318,17 @@ func cmdPush(cfg *config, args []string) error {
 				fmt.Sscan(args[i+1], &limit)
 				i++
 			}
+		case "--batch-size":
+			if i+1 < len(args) {
+				fmt.Sscan(args[i+1], &batchSize)
+				i++
+			}
 		default:
 			return fmt.Errorf("unknown push flag %s", args[i])
 		}
+	}
+	if batchSize < 1 {
+		batchSize = 40
 	}
 	db, err := openDB(cfg)
 	if err != nil {
@@ -351,6 +360,7 @@ func cmdPush(cfg *config, args []string) error {
 	}
 	today := time.Now().Format("2006-01-02")
 	pushed, held, already, failed := 0, 0, 0, 0
+	batchNo, batchPushed := 1, 0
 	var pushSources []photoSource
 	for _, r := range staged {
 		if limit > 0 && pushed+already >= limit {
@@ -485,6 +495,15 @@ func cmdPush(cfg *config, args []string) error {
 			pushSources = append(pushSources, photoSource{AuctionID: recID, URLs: photos})
 		}
 		pushed++
+		batchPushed++
+		if batchPushed >= batchSize {
+			fmt.Printf("BATCH %d COMPLETE: %d created, each read-back verified (cumulative %d created)\n", batchNo, batchPushed, pushed)
+			batchNo++
+			batchPushed = 0
+		}
+	}
+	if batchPushed > 0 {
+		fmt.Printf("BATCH %d COMPLETE: %d created, each read-back verified (cumulative %d created)\n", batchNo, batchPushed, pushed)
 	}
 	fmt.Printf("push: %d pushed, %d already in Airtable, %d held, %d failed (of %d staged)\n",
 		pushed, already, held, failed, len(staged))

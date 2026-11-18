@@ -19,10 +19,12 @@ type photoSource struct {
 	URLs      []string `json:"urls"`
 }
 
-// The artifact batch limits, from the cacheAuctionImages request schema.
+// Artifact batch sizes: the cacheAuctionImages schema allows 120 listings /
+// 1000 photos per call, but delivery runs in batches of 40 listings
+// (Chris's <50 batch rule, 2026-11-18 — a 60-listing payload timed out).
 const (
-	artifactBatchListings = 120
-	artifactBatchPhotos   = 1000
+	artifactBatchListings = 40
+	artifactBatchPhotos   = 400
 	artifactPhotosEach    = 12
 )
 
